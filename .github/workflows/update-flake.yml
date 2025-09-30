@@ -24,25 +24,23 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
       
-      - name: Download latest Warp preview
-        id: download
+      - name: Calculate SHA256 and download
+        id: hash
         run: |
-          echo "Downloading latest Warp preview .deb..."
-          curl -L -o warp-preview.deb "https://app.warp.dev/download?channel=preview&package=deb"
+          URL="https://app.warp.dev/download?channel=preview&package=deb"
+          echo "Prefetching from URL: $URL"
+          HASH=$(nix store prefetch-file --name warp-preview.deb "$URL")
+          echo "HASH=$HASH" >> $GITHUB_OUTPUT
+          echo "Calculated hash: $HASH"
       
-      - name: Extract version
+      - name: Download and extract version
         id: version
         run: |
+          echo "Downloading .deb to extract version..."
+          curl -L -o warp-preview.deb "https://app.warp.dev/download?channel=preview&package=deb"
           VERSION=$(dpkg-deb -I warp-preview.deb | grep "^ Version:" | cut -d' ' -f3)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION"
-      
-      - name: Calculate SHA256
-        id: hash
-        run: |
-          HASH=$(nix store prefetch-file --name warp-preview.deb ./warp-preview.deb)
-          echo "HASH=$HASH" >> $GITHUB_OUTPUT
-          echo "Calculated hash: $HASH"
       
       - name: Update flake.nix
         run: |
