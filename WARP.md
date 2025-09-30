@@ -69,10 +69,29 @@ nix flake show
 
 ## Update Workflow
 
-When Warp releases a new preview version:
+### Automated (Recommended)
+
+A GitHub Actions workflow automatically checks for updates daily:
+- **Schedule**: Runs every day at 00:00 UTC
+- **Manual trigger**: Can be triggered via GitHub Actions UI or CLI: `gh workflow run update-flake.yml`
+- **Process**:
+  1. Downloads latest Warp preview `.deb`
+  2. Extracts version from package metadata
+  3. Calculates SHA256 hash using `nix store prefetch-file`
+  4. Updates both `version` and `debSha` in `flake.nix`
+  5. Runs `nix flake update` to update nixpkgs
+  6. Builds the package on `x86_64-linux` to verify
+  7. Creates a PR with changes if there are updates
+- **Location**: `.github/workflows/update-flake.yml`
+
+**Phase 2 (Future)**: The workflow can be switched to auto-commit directly to main instead of creating PRs by uncommenting the direct commit section and commenting out the PR creation step.
+
+### Manual
+
+When you want to manually update or bypass automation:
 1. Run `./update.sh` - this prefetches the new .deb, calculates its SRI hash, and updates `debSha` in `flake.nix`
 2. The script validates the build automatically
-3. The version field in `flake.nix` may need manual updating if you want it to reflect the actual Warp version
+3. The version field in `flake.nix` needs manual updating if you want it to reflect the actual Warp version
 4. Commit changes to `flake.nix` and `flake.lock` (if updated)
 
 ## Flake Structure Notes
