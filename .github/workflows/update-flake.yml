@@ -29,7 +29,8 @@ jobs:
         run: |
           URL="https://app.warp.dev/download?channel=preview&package=deb"
           echo "Prefetching from URL: $URL"
-          HASH=$(nix store prefetch-file --name warp-preview.deb "$URL")
+          OUTPUT=$(nix store prefetch-file --name warp-preview.deb "$URL" 2>&1)
+          HASH=$(echo "$OUTPUT" | grep -oP "hash '\K[^']+")
           echo "HASH=$HASH" >> $GITHUB_OUTPUT
           echo "Calculated hash: $HASH"
       
