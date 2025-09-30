@@ -48,8 +48,8 @@ jobs:
           # Update version on line 21
           sed -i '21s/version = ".*";/version = "${{ steps.version.outputs.VERSION }}";/' flake.nix
           
-          # Update debSha on line 17
-          sed -i '17s/debSha = ".*";/debSha = "${{ steps.hash.outputs.HASH }}";/' flake.nix
+          # Update debSha on line 17 (use | as delimiter to avoid issues with / in hash)
+          sed -i '17s|debSha = ".*";|debSha = "${{ steps.hash.outputs.HASH }}";|' flake.nix
           
           echo "Updated flake.nix with new version and hash"
       
