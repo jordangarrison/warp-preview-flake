@@ -11,13 +11,6 @@ nix build .#default
 nix run .
 ```
 
-## Update
-
-```bash
-./update.sh
-nix run .
-```
-
 ## Install system-wide
 
 ### NixOS
@@ -36,3 +29,7 @@ home.packages = [
   inputs.warp-preview.packages.${pkgs.system}.default
 ];
 ```
+
+## Updates
+
+Automatically updated daily via GitHub Actions. Manual: `./update.sh` or `gh workflow run update-flake.yml`
