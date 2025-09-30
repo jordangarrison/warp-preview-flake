@@ -1,0 +1,112 @@
+name: Update Warp Preview Flake
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      
+      - name: Download latest Warp preview
+        id: download
+        run: |
+          echo "Downloading latest Warp preview .deb..."
+          curl -L -o warp-preview.deb "https://app.warp.dev/download?channel=preview&package=deb"
+      
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(dpkg-deb -I warp-preview.deb | grep "^ Version:" | cut -d' ' -f3)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+      
+      - name: Calculate SHA256
+        id: hash
+        run: |
+          HASH=$(nix store prefetch-file --name warp-preview.deb ./warp-preview.deb)
+          echo "HASH=$HASH" >> $GITHUB_OUTPUT
+          echo "Calculated hash: $HASH"
+      
+      - name: Update flake.nix
+        run: |
+          # Update version on line 21
+          sed -i '21s/version = ".*";/version = "${{ steps.version.outputs.VERSION }}";/' flake.nix
+          
+          # Update debSha on line 17
+          sed -i '17s/debSha = ".*";/debSha = "${{ steps.hash.outputs.HASH }}";/' flake.nix
+          
+          echo "Updated flake.nix with new version and hash"
+      
+      - name: Update flake inputs
+        run: |
+          nix flake update
+      
+      - name: Build package to verify
+        run: |
+          echo "Building package to verify changes..."
+          nix build .#default --system x86_64-linux
+      
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git --no-pager diff --stat
+          fi
+      
+      # Phase 1: Create Pull Request
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
+          title: "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## Automated Update
+            
+            This PR updates the warp-terminal-preview package:
+            
+            - **Version**: ${{ steps.version.outputs.VERSION }}
+            - **SHA256**: ${{ steps.hash.outputs.HASH }}
+            - **Flake inputs**: Updated to latest nixpkgs
+            
+            The package has been built and verified successfully.
+          branch: update-warp-${{ steps.version.outputs.VERSION }}
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+      
+      # Phase 2: Direct commit to main (commented out for now)
+      # Uncomment the section below and comment out the PR creation above to switch to direct commits
+      
+      # - name: Commit and push changes
+      #   if: steps.changes.outputs.has_changes == 'true'
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add flake.nix flake.lock
+      #     git commit -m "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
+      #     git push origin main
