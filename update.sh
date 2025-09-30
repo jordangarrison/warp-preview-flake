@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-URL="https://app.warp.dev/get_warp?package=deb&channel=preview"
+URL="https://app.warp.dev/download?channel=preview&package=deb"
 echo "Prefetching RAW .deb: $URL"
 
 RAW=$(nix store prefetch-file --name warp-preview.deb "$URL")
