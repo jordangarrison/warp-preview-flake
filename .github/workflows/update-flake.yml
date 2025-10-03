@@ -80,7 +80,7 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PR_AUTOMATION_TOKEN }}
           commit-message: "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
           title: "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
           body: |
