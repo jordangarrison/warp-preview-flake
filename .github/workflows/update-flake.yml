@@ -38,18 +38,19 @@ jobs:
         id: version
         run: |
           echo "Downloading .deb to extract version..."
-          curl -L -o warp-preview.deb "https://app.warp.dev/download?channel=preview&package=deb"
-          VERSION=$(dpkg-deb -I warp-preview.deb | grep "^ Version:" | cut -d' ' -f3)
+          DEB="$RUNNER_TEMP/warp-preview.deb"
+          curl -L -o "$DEB" "https://app.warp.dev/download?channel=preview&package=deb"
+          VERSION=$(dpkg-deb -I "$DEB" | grep "^ Version:" | awk '{print $2}')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION"
       
       - name: Update flake.nix
         run: |
-          # Update version on line 21
-          sed -i '21s/version = ".*";/version = "${{ steps.version.outputs.VERSION }}";/' flake.nix
+          # Update version (pattern-based, not line-number dependent)
+          sed -i -E 's|version = ".*";|version = "${{ steps.version.outputs.VERSION }}";|' flake.nix
           
-          # Update debSha on line 17 (use | as delimiter to avoid issues with / in hash)
-          sed -i '17s|debSha = ".*";|debSha = "${{ steps.hash.outputs.HASH }}";|' flake.nix
+          # Update debSha (pattern-based, safe for slashes)
+          sed -i -E 's|debSha = "sha256-[^"]+";|debSha = "${{ steps.hash.outputs.HASH }}";|' flake.nix
           
           echo "Updated flake.nix with new version and hash"
       
@@ -97,6 +98,9 @@ jobs:
           labels: |
             dependencies
             automated
+          add-paths: |
+            flake.nix
+            flake.lock
       
       # Phase 2: Direct commit to main (commented out for now)
       # Uncomment the section below and comment out the PR creation above to switch to direct commits

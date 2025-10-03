@@ -1,3 +1,6 @@
 result
 .nix-result
 .direnv/
+# Prevent accidental commits of downloaded artifacts
+*.deb
+warp-preview.deb
