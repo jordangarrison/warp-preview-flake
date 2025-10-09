@@ -94,6 +94,52 @@ When you want to manually update or bypass automation:
 3. The version field in `flake.nix` needs manual updating if you want it to reflect the actual Warp version
 4. Commit changes to `flake.nix` and `flake.lock` (if updated)
 
+## Font Configuration
+
+Warp uses the system's fontconfig to discover fonts. The derivation does **not** bundle fonts - instead, it relies entirely on your system's font configuration. This means all fonts installed on your system will be available in Warp.
+
+### Reproducible font installation (NixOS):
+
+```nix
+# In your configuration.nix or home-manager config
+fonts.packages = with pkgs; [
+  fira-code
+  fira-code-nerdfont
+  source-code-pro
+  noto-fonts-color-emoji
+  # Add any other fonts you want to use in Warp
+];
+```
+
+### Alternative (user-level installation):
+
+```bash
+# Install fonts to your user profile
+nix-env -iA nixpkgs.fira-code nixpkgs.source-code-pro nixpkgs.noto-fonts-color-emoji
+
+# Or with nix profile
+nix profile install nixpkgs#fira-code nixpkgs#source-code-pro nixpkgs#noto-fonts-color-emoji
+```
+
+### Verifying font availability:
+
+```bash
+# List all fonts visible to fontconfig
+fc-list : family | sort | uniq
+
+# Search for a specific font
+fc-list | grep -i "fira"
+```
+
+After installing fonts:
+1. The fonts should be immediately available via `fc-list`
+2. Restart Warp completely (if it was running)
+3. Go to Settings > Appearance
+4. Check "View all available system fonts"
+5. Your fonts should now appear in the dropdown
+
+**Note**: If fonts still don't appear, ensure your system's fontconfig cache is up to date by running `fc-cache -fv`.
+
 ## Flake Structure Notes
 
 - `inputs`: Only depends on nixpkgs unstable
