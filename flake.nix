@@ -15,6 +15,13 @@
       let
         debUrl = "https://app.warp.dev/download?channel=preview&package=deb";
         debSha = "sha256-/sZoX6AJ7RfggWRKSrWNp9VCEyikSMIZUTlLG6v5MYM=";
+        fontsConf = pkgs.makeFontsConf {
+          fontDirectories = [
+            pkgs.fira-code
+            pkgs.source-code-pro
+            pkgs.noto-fonts-color-emoji
+          ];
+        };
       in {
         default = pkgs.stdenv.mkDerivation {
           pname   = "warp-terminal-preview";
@@ -32,6 +39,7 @@
             stdenv.cc.cc zlib libGL curl alsa-lib
             xorg.libX11 xorg.libXext xorg.libXcursor xorg.libXi xorg.libXrandr xorg.libxcb
             libxkbcommon wayland gtk3 pango cairo fontconfig freetype libdrm
+            fira-code source-code-pro noto-fonts-color-emoji
           ];
 
           unpackPhase = ''dpkg-deb -x $src .'';
@@ -43,6 +51,7 @@
 
             makeWrapper $out/libexec/warp-preview $out/bin/warp \
               --prefix PATH : /run/wrappers/bin \
+              --set FONTCONFIG_FILE ${fontsConf} \
               --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath [
                 pkgs.libGL pkgs.libxkbcommon pkgs.wayland pkgs.xorg.libX11
                 pkgs.xorg.libXcursor pkgs.xorg.libXi pkgs.xorg.libXrandr
