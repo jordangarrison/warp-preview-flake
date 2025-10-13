@@ -16,7 +16,7 @@ nix run .
 ### NixOS
 
 ```nix
-inputs.warp-preview.url = "github:<youruser>/warp-preview";
+inputs.warp-preview.url = "github:jordangarrison/warp-preview";
 environment.systemPackages = [
   inputs.warp-preview.packages.${pkgs.system}.default
 ];
