@@ -1,5 +1,9 @@
 # Warp Terminal (preview) – NixOS flake
 
+> **Maintenance notice:** I am no longer actively using this package, but automated
+> daily flake updates will continue running. Pull requests and issues are welcome
+> from anyone who wants to contribute or report problems.
+
 Packages Warp preview `.deb` into a Nix derivation with `dpkg-deb -x` + `autoPatchelf`.
 Ensures `/run/wrappers/bin` is on PATH so `sudo` works inside Warp.
 
