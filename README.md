@@ -36,4 +36,4 @@ home.packages = [
 
 ## Updates
 
-Automatically updated daily via GitHub Actions. Manual: `./update.sh` or `gh workflow run update-flake.yml`
+Automatically updated daily via GitHub Actions — commits land directly on `main` after a successful build. Manual: `./update.sh` or `gh workflow run update-flake.yml`
