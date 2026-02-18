@@ -12,7 +12,6 @@ jobs:
     
     permissions:
       contents: write
-      pull-requests: write
     
     steps:
       - name: Checkout repository
@@ -75,41 +74,11 @@ jobs:
             git --no-pager diff --stat
           fi
       
-      # Phase 1: Create Pull Request
-      - name: Create Pull Request
+      - name: Commit and push changes
         if: steps.changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.PR_AUTOMATION_TOKEN }}
-          commit-message: "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
-          title: "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
-          body: |
-            ## Automated Update
-            
-            This PR updates the warp-terminal-preview package:
-            
-            - **Version**: ${{ steps.version.outputs.VERSION }}
-            - **SHA256**: ${{ steps.hash.outputs.HASH }}
-            - **Flake inputs**: Updated to latest nixpkgs
-            
-            The package has been built and verified successfully.
-          branch: update-warp-${{ steps.version.outputs.VERSION }}
-          delete-branch: true
-          labels: |
-            dependencies
-            automated
-          add-paths: |
-            flake.nix
-            flake.lock
-      
-      # Phase 2: Direct commit to main (commented out for now)
-      # Uncomment the section below and comment out the PR creation above to switch to direct commits
-      
-      # - name: Commit and push changes
-      #   if: steps.changes.outputs.has_changes == 'true'
-      #   run: |
-      #     git config user.name "github-actions[bot]"
-      #     git config user.email "github-actions[bot]@users.noreply.github.com"
-      #     git add flake.nix flake.lock
-      #     git commit -m "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
-      #     git push origin main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add flake.nix flake.lock
+          git commit -m "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
+          git push origin main
