@@ -4,3 +4,7 @@ result
 # Prevent accidental commits of downloaded artifacts
 *.deb
 warp-preview.deb
+.grove-agent
+.grove-base
+.grove-start.sh
+.grove-setup.sh
