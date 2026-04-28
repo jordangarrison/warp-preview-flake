@@ -30,7 +30,7 @@
           nativeBuildInputs = [ pkgs.autoPatchelfHook pkgs.dpkg pkgs.makeWrapper pkgs.file ];
           buildInputs = with pkgs; [
             stdenv.cc.cc zlib libGL curl alsa-lib
-            xorg.libX11 xorg.libXext xorg.libXcursor xorg.libXi xorg.libXrandr xorg.libxcb
+            libx11 libxext libxcursor libxi libxrandr libxcb
             libxkbcommon wayland gtk3 pango cairo fontconfig freetype libdrm
           ];
 
@@ -45,8 +45,8 @@
               --prefix PATH : /run/wrappers/bin \
               --prefix XDG_DATA_DIRS : "$out/share" \
               --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath [
-                pkgs.libGL pkgs.libxkbcommon pkgs.wayland pkgs.xorg.libX11
-                pkgs.xorg.libXcursor pkgs.xorg.libXi pkgs.xorg.libXrandr
+                pkgs.libGL pkgs.libxkbcommon pkgs.wayland pkgs.libx11
+                pkgs.libxcursor pkgs.libxi pkgs.libxrandr
                 pkgs.fontconfig pkgs.freetype
               ]}
 
