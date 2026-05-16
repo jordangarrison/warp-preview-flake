@@ -14,11 +14,11 @@
     packages = forAll (pkgs:
       let
         debUrl = "https://app.warp.dev/download?channel=preview&package=deb";
-        debSha = "sha256-X2V8M2cmUSB9ZuQvYw67C4OjV9NaLCnBeWRxCeZ+gPo=";
+        debSha = "sha256-aQRP9tnsnP0Ko3h39j5pDMgPkDRiUy1UPDWjWCgAzuE=";
       in {
         default = pkgs.stdenv.mkDerivation {
           pname   = "warp-terminal-preview";
-          version = "0.2026.05.06.15.42.preview.05";
+          version = "0.2026.05.14.19.38.preview.03";
 
           src = pkgs.fetchurl {
             url = debUrl;
