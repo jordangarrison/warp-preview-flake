@@ -6,31 +6,37 @@
   outputs = { self, nixpkgs }:
   let
     systems = [ "x86_64-linux" "aarch64-linux" ];
+    debUrls = {
+      x86_64-linux = "https://app.warp.dev/download?channel=preview&package=deb";
+      aarch64-linux = "https://app.warp.dev/download?channel=preview&package=deb_arm64";
+    };
+    debShas = {
+      x86_64-linux = "sha256-+iUZXTGxBO7qK8FcvR5Rkav1dnhgotp9t/6eDf2XgHo=";
+      aarch64-linux = "sha256-suqxMWPye84cwzCF+7uVDw5bfdnb3n28mL8EOg8iIVg=";
+    };
     forAll = f: nixpkgs.lib.genAttrs systems (system: f (import nixpkgs {
       inherit system;
       config.allowUnfree = true;
     }));
   in {
     packages = forAll (pkgs:
-      let
-        debUrl = "https://app.warp.dev/download?channel=preview&package=deb";
-        debSha = "sha256-+iUZXTGxBO7qK8FcvR5Rkav1dnhgotp9t/6eDf2XgHo=";
+      let system = pkgs.stdenv.hostPlatform.system;
       in {
         default = pkgs.stdenv.mkDerivation {
           pname   = "warp-terminal-preview";
           version = "0.2026.08.05.09.03.preview.01";
 
           src = pkgs.fetchurl {
-            url = debUrl;
-            sha256 = debSha;
+            url = debUrls.${system};
+            sha256 = debShas.${system};
             curlOptsList = [ "-L" ];
-            name = "warp-preview.deb";
+            name = "warp-preview-${system}.deb";
           };
 
           nativeBuildInputs = [ pkgs.autoPatchelfHook pkgs.dpkg pkgs.makeWrapper pkgs.file ];
           buildInputs = with pkgs; [
             stdenv.cc.cc zlib libGL curl alsa-lib
-            xorg.libX11 xorg.libXext xorg.libXcursor xorg.libXi xorg.libXrandr xorg.libxcb
+            libx11 libxext libxcursor libxi libxrandr libxcb
             libxkbcommon wayland gtk3 pango cairo fontconfig freetype libdrm
           ];
 
@@ -45,8 +51,8 @@
               --prefix PATH : /run/wrappers/bin \
               --prefix XDG_DATA_DIRS : "$out/share" \
               --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath [
-                pkgs.libGL pkgs.libxkbcommon pkgs.wayland pkgs.xorg.libX11
-                pkgs.xorg.libXcursor pkgs.xorg.libXi pkgs.xorg.libXrandr
+                pkgs.libGL pkgs.libxkbcommon pkgs.wayland pkgs.libx11
+                pkgs.libxcursor pkgs.libxi pkgs.libxrandr
                 pkgs.fontconfig pkgs.freetype
               ]}
 
@@ -71,6 +77,7 @@
       default = {
         type = "app";
         program = "${self.packages.${system}.default}/bin/warp";
+        meta.description = "Run Warp Terminal preview";
       };
     });
 

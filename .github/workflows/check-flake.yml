@@ -1,0 +1,35 @@
+name: Check flake
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.system }})
+    strategy:
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Evaluate flake
+        run: nix flake check --no-build --show-trace
+
+      - name: Build package
+        run: nix build ".#packages.${{ matrix.system }}.default" --print-build-logs
