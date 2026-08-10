@@ -15,7 +15,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -23,35 +23,42 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
       
-      - name: Calculate SHA256 and download
-        id: hash
+      - name: Fetch release metadata
+        id: release
         run: |
-          URL="https://app.warp.dev/download?channel=preview&package=deb"
-          echo "Prefetching from URL: $URL"
-          OUTPUT=$(nix store prefetch-file --name warp-preview.deb "$URL" 2>&1)
-          HASH=$(echo "$OUTPUT" | grep -oP "hash '\K[^']+")
-          echo "HASH=$HASH" >> $GITHUB_OUTPUT
-          echo "Calculated hash: $HASH"
-      
-      - name: Download and extract version
-        id: version
-        run: |
-          echo "Downloading .deb to extract version..."
-          DEB="$RUNNER_TEMP/warp-preview.deb"
-          curl -L -o "$DEB" "https://app.warp.dev/download?channel=preview&package=deb"
-          VERSION=$(dpkg-deb -I "$DEB" | grep "^ Version:" | awk '{print $2}')
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Found version: $VERSION"
+          X86_URL="https://app.warp.dev/download?channel=preview&package=deb"
+          ARM64_URL="https://app.warp.dev/download?channel=preview&package=deb_arm64"
+          X86_PREFETCH=$(nix store prefetch-file --json --name warp-preview-x86_64-linux.deb "$X86_URL")
+          ARM64_PREFETCH=$(nix store prefetch-file --json --name warp-preview-aarch64-linux.deb "$ARM64_URL")
+
+          X86_HASH=$(jq -r .hash <<< "$X86_PREFETCH")
+          ARM64_HASH=$(jq -r .hash <<< "$ARM64_PREFETCH")
+          X86_DEB=$(jq -r .storePath <<< "$X86_PREFETCH")
+          ARM64_DEB=$(jq -r .storePath <<< "$ARM64_PREFETCH")
+          VERSION=$(dpkg-deb -f "$X86_DEB" Version)
+          ARM64_VERSION=$(dpkg-deb -f "$ARM64_DEB" Version)
+
+          if [ "$VERSION" != "$ARM64_VERSION" ]; then
+            echo "Release versions do not match: x86_64=$VERSION, aarch64=$ARM64_VERSION" >&2
+            exit 1
+          fi
+
+          {
+            echo "VERSION=$VERSION"
+            echo "X86_HASH=$X86_HASH"
+            echo "ARM64_HASH=$ARM64_HASH"
+          } >> "$GITHUB_OUTPUT"
       
       - name: Update flake.nix
         run: |
           # Update version (pattern-based, not line-number dependent)
-          sed -i -E 's|version = ".*";|version = "${{ steps.version.outputs.VERSION }}";|' flake.nix
+          sed -i -E 's|version = ".*";|version = "${{ steps.release.outputs.VERSION }}";|' flake.nix
           
-          # Update debSha (pattern-based, safe for slashes)
-          sed -i -E 's|debSha = "sha256-[^"]+";|debSha = "${{ steps.hash.outputs.HASH }}";|' flake.nix
+          # Update architecture-specific hashes
+          sed -i -E 's|x86_64-linux = "sha256-[^"]+";|x86_64-linux = "${{ steps.release.outputs.X86_HASH }}";|' flake.nix
+          sed -i -E 's|aarch64-linux = "sha256-[^"]+";|aarch64-linux = "${{ steps.release.outputs.ARM64_HASH }}";|' flake.nix
           
-          echo "Updated flake.nix with new version and hash"
+          echo "Updated flake.nix with new version and hashes"
       
       - name: Update flake inputs
         run: |
@@ -60,16 +67,16 @@ jobs:
       - name: Build package to verify
         run: |
           echo "Building package to verify changes..."
-          nix build .#default --system x86_64-linux
+          nix build .#packages.x86_64-linux.default
       
       - name: Check for changes
         id: changes
         run: |
           if git diff --quiet; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No changes detected"
           else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected:"
             git --no-pager diff --stat
           fi
@@ -80,5 +87,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add flake.nix flake.lock
-          git commit -m "chore: update warp-terminal-preview to ${{ steps.version.outputs.VERSION }}"
+          git commit -m "chore: update warp-terminal-preview to ${{ steps.release.outputs.VERSION }}"
           git push origin main
