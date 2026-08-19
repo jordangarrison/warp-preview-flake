@@ -11,8 +11,8 @@
       aarch64-linux = "https://app.warp.dev/download?channel=preview&package=deb_arm64";
     };
     debShas = {
-      x86_64-linux = "sha256-ww2FOvNi8oQiq3lTBOJEm57gs3S4VcKlE+xFywfty1w=";
-      aarch64-linux = "sha256-g+QuOXXi3xEdR/ov8HvyPtOzfGWy56Vv6+pAxkEX5UM=";
+      x86_64-linux = "sha256-ffgu4MMc3Ej9FNPK+63iRDFo5q0Gwf3vQYBrF7VHMqE=";
+      aarch64-linux = "sha256-nDghQoZMkEsTOtbuMoZREY2wlMxdbn58MUn0f2o/kIc=";
     };
     forAll = f: nixpkgs.lib.genAttrs systems (system: f (import nixpkgs {
       inherit system;
@@ -24,7 +24,7 @@
       in {
         default = pkgs.stdenv.mkDerivation {
           pname   = "warp-terminal-preview";
-          version = "0.2026.08.12.21.54.preview.00";
+          version = "0.2026.08.18.02.52.preview.00";
 
           src = pkgs.fetchurl {
             url = debUrls.${system};
